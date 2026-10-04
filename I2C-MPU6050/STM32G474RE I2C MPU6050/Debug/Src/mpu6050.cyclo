@@ -1,4 +1,0 @@
-../Src/mpu6050.c:6:6:mpu6050_read_address	1
-../Src/mpu6050.c:11:6:mpu6050_write	1
-../Src/mpu6050.c:17:6:mpu6050_read_values	1
-../Src/mpu6050.c:21:6:mpu6050_init	2
