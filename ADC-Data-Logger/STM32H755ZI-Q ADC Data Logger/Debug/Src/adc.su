@@ -1,0 +1,5 @@
+C:/SOHAM THINGS/Siuu/STM32 Projects/chip_headers/CMSIS/Include/core_cm7.h:1902:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
+../Src/adc.c:20:6:pc0_adc_interrupt_init	8	static
+../Src/adc.c:48:6:pc0_adc_init	4	static
+../Src/adc.c:68:6:start_conversion	4	static
+../Src/adc.c:74:10:adc_read	4	static
