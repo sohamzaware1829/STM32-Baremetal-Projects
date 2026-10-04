@@ -1,69 +1,45 @@
-# STM32 Bare-Metal Projects
+STM32 Bare-Metal Projects
+A collection of bare-metal embedded projects developed using Embedded C and direct STM32 peripheral register programming.
+These projects focus on understanding STM32 peripherals at the hardware-register level, including ADC, UART, I2C, GPIO, interrupts, NVIC, and sensor interfacing.
+The goal is to build practical experience in developing embedded firmware without depending on high-level HAL APIs for the core peripheral operations.
+Projects
+Project	MCU	Main Concepts
+ADC Data Logger	STM32H755ZI-Q	ADC, Interrupts, UART, GPIO, Registers
+MPU6050 I2C Interface	STM32G474RE	I2C, Sensor Interfacing, UART, Registers
 
-A collection of bare-metal embedded projects developed using **Embedded C** and **direct STM32 peripheral register programming**.
 
-These projects focus on understanding STM32 peripherals at the hardware-register level instead of depending on high-level HAL drivers. The repository currently contains projects involving **ADC, UART, I2C, interrupts, GPIO, NVIC, and sensor interfacing**.
-
----
-
-## Projects
-
-| Project | MCU | Main Concepts |
-|---|---|---|
-| ADC Data Logger | STM32H755ZI-Q | ADC, Interrupts, UART, GPIO, Registers |
-| MPU6050 I2C Interface | STM32G474RE | I2C, Sensor Interfacing, UART, Registers |
-
----
-
-# 1. ADC Data Logger
-
-## Overview
-
-A bare-metal ADC data acquisition project developed using the **STM32H755ZI-Q**.
-
-The project reads an analog signal connected to **PC0**, which is configured as **ADC1 Channel 1**. The ADC is configured directly through STM32 registers and the conversion completion is detected using the **End-of-Conversion (EOC) interrupt**.
-
-Once the conversion is completed, the ADC result is read from the ADC data register and transmitted to a PC through **USART3**. `printf()` is redirected to UART to make debugging and monitoring easier.
-
-This project demonstrates the complete path from an analog input to digital data and finally to a PC terminal.
-
-## Main Objectives
-
-- Understand STM32 ADC peripheral configuration
-- Configure GPIO for analog input
-- Configure ADC channels using registers
-- Handle ADC conversion using interrupts
-- Configure NVIC for ADC interrupt handling
-- Configure USART3 without HAL
-- Redirect `printf()` output to UART
-- Understand register-level peripheral programming
-
-## Hardware
-
+1. ADC Data Logger
+Overview
+A bare-metal ADC data acquisition project developed using the STM32H755ZI-Q.
+An analog signal is connected to PC0, configured as ADC1 Channel 1. The ADC is configured directly through STM32 peripheral registers and the conversion is handled using the End-of-Conversion (EOC) interrupt.
+After the conversion is completed, the ADC result is read from the ADC data register and transmitted to a PC through USART3. printf() is redirected to UART for displaying the acquired values on a serial terminal.
+This project demonstrates the complete process of configuring an ADC, handling an interrupt, reading conversion data, and transmitting the result through UART.
+Key Features
+- ADC1 Channel 1 configured on PC0
+- Analog GPIO configuration
+- ADC conversion using EOC interrupt
+- NVIC interrupt configuration
+- Direct ADC register programming
+- USART3 communication at 115200 baud
+- printf() redirected to UART
+- Modular ADC and UART drivers
+Hardware
 - STM32H755ZI-Q Nucleo
 - Analog input / potentiometer
 - USB connection to PC
-
-## Peripheral Configuration
-
-### ADC
-
-- Peripheral: **ADC1**
-- Channel: **Channel 1**
-- Analog Input: **PC0**
-- Interrupt: **EOC**
-- Conversion result: **ADC1->DR**
-
-### UART
-
-- Peripheral: **USART3**
-- TX Pin: **PD8**
-- Alternate Function: **AF7**
-- Baud Rate: **115200**
-
-## Working Principle
-
-```text
+Peripheral Configuration
+ADC
+- Peripheral: ADC1
+- Channel: Channel 1
+- Input Pin: PC0
+- Interrupt: EOC
+- Data Register: ADC1->DR
+UART
+- Peripheral: USART3
+- TX Pin: PD8
+- Alternate Function: AF7
+- Baud Rate: 115200
+Working Flow
 Analog Signal
       ↓
      PC0
@@ -72,9 +48,7 @@ Analog Signal
       ↓
 ADC Conversion
       ↓
-   EOC Flag
-      ↓
- ADC Interrupt
+   EOC Interrupt
       ↓
 Read ADC1->DR
       ↓
@@ -84,14 +58,11 @@ Read ADC1->DR
       ↓
    PC Terminal
 
-ADC Configuration
-The GPIO pin is configured in analog mode and ADC1 is enabled through the corresponding RCC registers.
-The ADC channel is selected through the ADC sequence register.
-The conversion is started using the ADC control register:
+ADC Implementation
+The ADC conversion is started by setting the ADSTART bit in the ADC control register:
 ADC1->CR |= CR_ADSTART;
 
-When the conversion is complete, the ADC generates an EOC interrupt.
-The interrupt handler checks the EOC flag:
+When the conversion is completed, the EOC flag is checked inside the ADC interrupt handler:
 void ADC_IRQHandler(void)
 {
     if((ADC1->ISR & ISR_EOC) != 0)
@@ -101,22 +72,12 @@ void ADC_IRQHandler(void)
     }
 }
 
-The conversion result is then read from:
+The converted ADC value is read from the ADC data register:
 sensor_value = ADC1->DR;
 
-The value is transmitted using:
+The value is then sent to the PC through UART:
 printf("Sensor value is: %lu\r\n",
        (unsigned long)sensor_value);
-
-UART Communication
-USART3 is configured directly using registers.
-The project uses PD8 as the UART transmit pin with Alternate Function 7.
-printf() is redirected to USART3 using __io_putchar(), allowing ADC values to be printed directly to a serial terminal.
-Example output:
-Sensor value is: 1245
-Sensor value is: 1321
-Sensor value is: 1408
-Sensor value is: 1512
 
 Firmware Structure
 ADC-Data-Logger/
@@ -134,18 +95,17 @@ main.c
 Responsible for:
 - Initializing USART3
 - Initializing ADC interrupt configuration
-- Running the main program
-- Handling ADC callback processing
-- Reading the ADC result
-- Printing the converted value
+- Handling ADC interrupt processing
+- Reading the ADC conversion result
+- Sending the result through UART
 adc.c
 Responsible for:
 - Enabling GPIOC clock
 - Configuring PC0 as analog input
 - Enabling ADC1 clock
-- Selecting ADC channel
-- Enabling ADC EOC interrupt
-- Enabling the ADC interrupt in NVIC
+- Selecting ADC Channel 1
+- Configuring ADC EOC interrupt
+- Enabling ADC interrupt through NVIC
 - Enabling ADC1
 - Starting ADC conversions
 uart.c
@@ -154,29 +114,30 @@ Responsible for:
 - Configuring PD8 for USART3
 - Selecting Alternate Function 7
 - Configuring USART3
-- Setting baud rate
+- Setting the baud rate
 - Transmitting characters
 - Redirecting printf() to UART
 2. MPU6050 I2C Interface
 Overview
 A bare-metal I2C sensor interfacing project developed using the STM32G474RE and an MPU6050 IMU sensor.
-The STM32 communicates with the MPU6050 using I2C1. The project implements the low-level I2C communication directly through STM32 registers instead of using HAL I2C APIs.
-The firmware verifies the connected sensor using the WHO_AM_I register, performs sensor initialization, configures the accelerometer, reads six bytes of accelerometer data, combines the received bytes into signed 16-bit values, and converts the raw readings into acceleration in g.
-The processed sensor values are then displayed on a PC using USART2.
-Main Objectives
-- Understand I2C master communication
-- Configure I2C using STM32 registers
-- Interface an external sensor
-- Implement register read and write operations
-- Perform I2C burst transactions
-- Verify sensor identity
-- Configure MPU6050 registers
-- Read accelerometer data
-- Convert raw sensor data into physical units
-- Display sensor data through UART
+The STM32 communicates with the MPU6050 using I2C1. The I2C peripheral is configured directly through STM32 registers and a custom low-level I2C driver is used for sensor communication.
+The project verifies the connected MPU6050 using the WHO_AM_I register, performs sensor initialization, resets and wakes the device, configures the accelerometer, and reads the accelerometer data using an I2C burst-read operation.
+The six bytes of accelerometer data are combined into signed 16-bit X, Y, and Z values and converted into acceleration in g. The results are then displayed on a PC through USART2.
+Key Features
+- Bare-metal I2C1 driver
+- Direct STM32 I2C register programming
+- MPU6050 register read/write operations
+- WHO_AM_I sensor verification
+- MPU6050 reset and wake-up
+- Accelerometer configuration
+- Six-byte burst data acquisition
+- Raw accelerometer data processing
+- Conversion of raw data into g
+- USART2 debug output
+- Modular I2C, MPU6050, and UART drivers
 Hardware
 - STM32G474RE
-- MPU6050
+- MPU6050 IMU sensor
 - USB connection to PC
 - I2C pull-up resistors
 Peripheral Configuration
@@ -186,15 +147,43 @@ I2C
 - SDA: PB9
 - Alternate Function: AF4
 - Speed: 100 kHz Standard Mode
-- Communication: Master
 UART
 - Peripheral: USART2
-- TX: PA2
-- RX: PA3
+- TX Pin: PA2
+- RX Pin: PA3
 - Alternate Function: AF7
 - Baud Rate: 115200
+Working Flow
+          STM32G474RE
+               │
+               │ I2C1
+               │
+        ┌──────┴──────┐
+        │   MPU6050   │
+        └──────┬──────┘
+               │
+               ↓
+          WHO_AM_I
+               ↓
+        Sensor Reset
+               ↓
+          Wake Sensor
+               ↓
+    Configure Accelerometer
+               ↓
+      Burst Read 6 Bytes
+               ↓
+     X / Y / Z Raw Values
+               ↓
+        Convert to g
+               ↓
+          USART2
+               ↓
+          PC Terminal
+
 MPU6050 Initialization
-The sensor initialization follows this sequence:
+The MPU6050 is initialized through I2C register communication.
+The initialization sequence is:
 Start
   ↓
 Initialize USART2
@@ -211,19 +200,20 @@ Configure Accelerometer
   ↓
 Start Sensor Reading
 
-The WHO_AM_I register is used to verify that the STM32 is communicating with the expected MPU6050 device.
+The firmware reads the WHO_AM_I register to verify communication with the sensor.
 Example:
 WHO_AM_I = 0x68
 
-The project then configures the sensor's power management and accelerometer settings before starting data acquisition.
-I2C Communication
+The sensor is then reset and taken out of sleep mode before configuring the accelerometer.
+I2C Driver
 The project contains a low-level I2C driver that directly controls the STM32 I2C peripheral.
-The driver implements:
+The main I2C functions are:
 I2C1_byteRead();
 I2C1_burstRead();
 I2C1_burstWrite();
 
-These functions handle the basic I2C transaction sequence including:
+These functions are used for communication with the MPU6050 registers.
+The driver handles the major parts of an I2C transaction:
 START
   ↓
 Slave Address
@@ -238,18 +228,22 @@ Transfer Complete
   ↓
 STOP
 
-The driver checks peripheral status flags such as:
+The implementation checks I2C status conditions such as:
 - BUSY
 - TXIS
 - TC
 - RXNE
 - STOPF
-This provides direct experience with the STM32 I2C peripheral rather than hiding the communication process behind a library.
+This gives direct control over the I2C communication process at the peripheral-register level.
 MPU6050 Register Communication
-The firmware performs both register read and register write operations.
-For example, sensor configuration is performed by writing values to MPU6050 registers.
-The project also reads multiple consecutive registers using a burst read operation.
-The accelerometer data consists of six bytes:
+The project performs both read and write operations on MPU6050 registers.
+The firmware uses register access to:
+- Verify the sensor identity
+- Reset the sensor
+- Wake the sensor
+- Configure the accelerometer
+- Read accelerometer measurements
+Accelerometer data is read as a burst of six consecutive bytes:
 X High Byte
 X Low Byte
 
@@ -259,25 +253,24 @@ Y Low Byte
 Z High Byte
 Z Low Byte
 
-These bytes are combined into signed 16-bit values.
+Accelerometer Data Processing
+The received high and low bytes are combined to form signed 16-bit acceleration values:
 x = (data_rec[1] << 8) | data_rec[0];
 
 y = (data_rec[3] << 8) | data_rec[2];
 
 z = (data_rec[5] << 8) | data_rec[4];
 
-Accelerometer Data Conversion
 The accelerometer is configured for the ±4g range.
 For this range, the sensitivity used by the project is:
 8192 LSB/g
 
-Therefore, the raw accelerometer values are converted using:
+The raw values are converted into acceleration in g:
 xg = x / 8192.0;
 yg = y / 8192.0;
 zg = z / 8192.0;
 
-This converts the raw signed ADC-like sensor output into acceleration values expressed in g.
-Example output:
+Example UART Output
 WHO_AM_I = 0x68
 
 Reading sensor...
@@ -285,15 +278,7 @@ Read done
 
 Accel (g): X=0.12, Y=-0.03, Z=0.98
 
-UART Debug Output
-USART2 is used to monitor the sensor communication and display the measured acceleration values.
-The UART output is useful for:
-- Verifying sensor communication
-- Checking WHO_AM_I
-- Monitoring I2C transactions
-- Viewing accelerometer readings
-- Debugging the firmware
-printf() is redirected to USART2 so that messages can be written directly from the application code.
+The UART output provides a simple way to verify sensor communication and observe the accelerometer measurements.
 Firmware Structure
 I2C-MPU6050/
 └── STM32G474RE I2C MPU6050/
@@ -310,48 +295,48 @@ I2C-MPU6050/
 
 main.c
 Responsible for:
-- Initializing UART
+- Initializing USART2
 - Initializing the MPU6050
-- Reading the sensor identity
+- Reading and displaying WHO_AM_I
 - Requesting accelerometer data
-- Combining raw bytes
-- Converting raw values to g
+- Combining high and low bytes
+- Converting raw data into g
 - Printing X, Y and Z acceleration
 i2c.c
 Contains the low-level I2C1 driver.
-Responsibilities include:
-- GPIO configuration
-- I2C clock configuration
-- I2C timing configuration
-- START generation
-- STOP generation
-- Read/write control
-- Transmit handling
-- Receive handling
-- Byte transactions
-- Burst transactions
+Responsible for:
+- Configuring GPIO pins
+- Enabling I2C1 clock
+- Configuring I2C timing
+- Generating START conditions
+- Generating STOP conditions
+- Handling transmit operations
+- Handling receive operations
+- Performing byte reads
+- Performing burst reads
+- Performing burst writes
 mpu6050.c
 Contains MPU6050-specific functions for:
 - Reading sensor registers
 - Writing sensor registers
 - Reading accelerometer data
-- Sensor initialization
-- Accelerometer configuration
+- Initializing the MPU6050
+- Configuring the accelerometer
 uart.c
 Responsible for:
-- USART2 configuration
-- GPIO configuration
-- Baud-rate configuration
+- Configuring USART2
+- Configuring PA2 and PA3
+- Setting the baud rate
 - UART transmission
-- printf() redirection
+- Redirecting printf() to USART2
 Technical Skills Demonstrated
 Embedded C
-- Direct register manipulation
+- Direct peripheral register manipulation
 - Bitwise operations
-- Peripheral register access
+- Register-level programming
 - Interrupt service routines
-- Modular driver development
-- Data conversion
+- Modular firmware development
+- Sensor data processing
 - printf() UART retargeting
 STM32 Peripherals
 - GPIO
@@ -359,26 +344,23 @@ STM32 Peripherals
 - I2C
 - USART
 - NVIC
-- RCC / clock configuration
+- RCC / peripheral clock configuration
 - Alternate Function configuration
 Communication Protocols
 - UART
 - I2C
 Embedded Concepts
+- Bare-metal firmware development
 - Interrupt-driven ADC acquisition
 - Polling-based I2C communication
 - Sensor register communication
 - Peripheral initialization
 - Hardware-level debugging
-- Modular firmware organization
+- Modular driver architecture
 Development Approach
-The projects are intentionally implemented at the register level to build a stronger understanding of how STM32 peripherals operate internally.
-Instead of using high-level APIs such as:
-HAL_ADC_Start();
-HAL_I2C_Master_Transmit();
-
-the projects directly configure and access STM32 peripheral registers.
-The general firmware approach is:
+The projects are implemented at the register level to understand how STM32 peripherals operate internally.
+Instead of depending on high-level HAL functions, the firmware directly configures peripheral registers for ADC, I2C, UART, GPIO, and interrupt handling.
+The general firmware flow is:
 Enable Peripheral Clock
         ↓
 Configure GPIO
@@ -387,23 +369,24 @@ Configure Peripheral Registers
         ↓
 Enable Peripheral
         ↓
-Start Communication / Conversion
+Start Conversion / Communication
         ↓
-Handle Data
+Acquire Data
         ↓
 Process Data
         ↓
 UART Debug Output
 
-This provides practical experience with the relationship between microcontroller hardware, registers, peripheral configuration, and application-level firmware.
+This approach provides practical experience with the relationship between microcontroller hardware, peripheral registers, communication protocols, interrupts, and embedded application firmware.
 Development Environment
 - IDE: STM32CubeIDE
 - Language: Embedded C
 - MCUs: STM32H755ZI-Q, STM32G474RE
-- Debugging: ST-LINK / UART terminal
+- Debug Interface: ST-LINK
+- Communication: UART / I2C
 - Programming Approach: Bare-Metal / Register-Level
 Future Improvements
-Possible extensions to these projects include:
+Possible extensions include:
 - ADC DMA-based data acquisition
 - Timer-triggered ADC sampling
 - I2C timeout and error handling
@@ -441,3 +424,7 @@ STM32-BareMetal-Projects/
 │           └── uart.c
 │
 └── README.md
+
+Author
+Soham Zaware
+B.Tech Electronics & Telecommunication Engineering
